@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Futuristic Control Panel</title>
+
+<style>
+  body {
+    background: radial-gradient(circle at center, #0a0a0f, #000);
+    color: #e0e0ff;
+    font-family: 'Orbitron', sans-serif;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 2.5rem;
+    letter-spacing: 4px;
+    color: #7df9ff;
+    text-shadow: 0 0 20px #00eaff;
+    margin-bottom: 30px;
+  }
+
+  .panel {
+    max-width: 900px;
+    margin: auto;
+    padding: 25px;
+    border-radius: 20px;
+    background: rgba(20, 20, 40, 0.6);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 25px #00eaff88, inset 0 0 20px #004466;
+    border: 2px solid #00eaff55;
+    animation: pulseGlow 4s infinite alternate;
+  }
+
+  @keyframes pulseGlow {
+    from { box-shadow: 0 0 20px #00eaff55; }
+    to   { box-shadow: 0 0 40px #00eaffaa; }
+  }
+
+  .section {
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 2px dashed #00eaff55;
+  }
+
+  .section:last-child {
+    border-bottom: none;
+  }
+
+  .section h2 {
+    font-size: 1.6rem;
+    color: #7df9ff;
+    text-shadow: 0 0 10px #00eaff;
+    margin-bottom: 15px;
+  }
+
+  .control-row {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  label {
+    min-width: 150px;
+    font-size: 1rem;
+    color: #b0eaff;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    accent-color: #00eaff;
+  }
+
+  input[type="color"] {
+    border: none;
+    width: 60px;
+    height: 40px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px #00eaff;
+  }
+
+  button {
+    background: linear-gradient(90deg, #003344, #00aaff);
+    color: #e0e0ff;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    box-shadow: 0 0 15px #00eaff;
+    transition: 0.3s;
+  }
+
+  button:hover {
+    box-shadow: 0 0 25px #00eaff;
+    transform: scale(1.05);
+  }
+
+  .status {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #88ccee;
+    text-shadow: 0 0 5px #004466;
+  }
+
+  audio {
+    width: 100%;
+    margin-top: 15px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px #00eaff;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>NEON CONTROL INTERFACE</h1>
+
+<div class="panel">
+
+  <!-- LIGHTING -->
+  <div class="section">
+    <h2>Lighting Module</h2>
+
+    <button id="connect-light">Link to Zengge Strip</button>
+    <div id="light-status" class="status">Awaiting connection...</div>
+
+    <div class="control-row">
+      <label>Brightness</label>
+      <input type="range" id="light-brightness" min="0" max="255" value="128">
+    </div>
+
+    <div class="control-row">
+      <label>Colour</label>
+      <input type="color" id="light-color" value="#ffffff">
+    </div>
+
+    <button id="apply-light">Deploy Lighting</button>
+  </div>
+
+  <!-- SOUND -->
+  <div class="section">
+    <h2>Sound Module</h2>
+
+    <button id="connect-sound">Link to Audio Device</button>
+    <div id="sound-status" class="status">Awaiting connection...</div>
+
+    <div class="control-row">
+      <label>Volume (local)</label>
+      <input type="range" id="sound-volume" min="0" max="100" value="40">
+    </div>
+<center>
+    <h2>Playlist</h2>
+</center>
+<h3>Opening</h3>
+    <audio id="audio1" controls>
+      <source src="opening.mp3" type="audio/mpeg">
+    </audio>
+<h3>Love Generation</h3>
+    <audio id="audio2" controls>
+      <source src="love-generation.mp3" type="audio/mpeg">
+    </audio>
+<h3>Pompeii</h3>
+    <audio id="audio1" controls>
+      <source src="pompeii.mp3" type="audio/mpeg">
+    </audio>
+<h3>You'v Got A Friend In Me</h3>
+    <audio id="audio2" controls>
+      <source src="you-have-a-friend-in-me.mp3" type="audio/mpeg">
+    </audio>
+
+  </div>
+
+</div>
+
+<script>
+/* -------------------------
+   ZENGGE LED STRIP (BLE)
+   ------------------------- */
+
+let ledDevice;
+let ledCharacteristic;
+
+const ZENGGE_SERVICE = '0000ffd5-0000-1000-8000-00805f9b34fb';
+const ZENGGE_WRITE = '0000ffd9-0000-1000-8000-00805f9b34fb';
+
+document.getElementById('connect-light').onclick = async () => {
+  try {
+    ledDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: "Zengge" }],
+      optionalServices: [ZENGGE_SERVICE]
+    });
+
+    const server = await ledDevice.gatt.connect();
+    const service = await server.getPrimaryService(ZENGGE_SERVICE);
+    ledCharacteristic = await service.getCharacteristic(ZENGGE_WRITE);
+
+    document.getElementById('light-status').textContent = "Zengge strip linked.";
+  } catch {
+    document.getElementById('light-status').textContent = "Link failed.";
+  }
+};
+
+document.getElementById('apply-light').onclick = async () => {
+  if (!ledCharacteristic) {
+    document.getElementById('light-status').textContent = "Not connected.";
+    return;
+  }
+
+  const brightness = document.getElementById('light-brightness').value;
+  const color = document.getElementById('light-color').value;
+
+  const r = parseInt(color.substr(1,2), 16);
+  const g = parseInt(color.substr(3,2), 16);
+  const b = parseInt(color.substr(5,2), 16);
+
+  const command = new Uint8Array([0x56, r, g, b, brightness, 0xAA]);
+
+  try {
+    await ledCharacteristic.writeValue(command);
+    document.getElementById('light-status').textContent = "Lighting updated.";
+  } catch {
+    document.getElementById('light-status').textContent = "Write failed.";
+  }
+};
+
+/* -------------------------
+   AUDIO (LOCAL ONLY)
+   ------------------------- */
+
+document.getElementById('connect-sound').onclick = () => {
+  document.getElementById('sound-status').textContent =
+    "Browser cannot link Bluetooth audio directly, but local audio is ready.";
+};
+
+document.getElementById('sound-volume').oninput = (e) => {
+  const vol = e.target.value / 100;
+  document.querySelectorAll("audio").forEach(a => a.volume = vol);
+};
+</script>
+
+</body>
+</html>
